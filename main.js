@@ -30,12 +30,11 @@ app.use(express.static(path.join(__dirname, "dist")));
 //remote:
 // app.use(express.static(path.join(__dirname, '../assignment-3-3-frontend/dist')));
 
-app.get("/",function(req,res)
-{ 
+app.get("/", function (req, res) {
   //remote: 
   // res.sendFile(path.join(__dirname, '../assignment-3-3-frontend/dist/index.html'));
   //local:
-  res.sendFile(__dirname+"/index.html");
+  res.sendFile(__dirname + "/index.html");
 
 });
 
@@ -80,7 +79,7 @@ app.get("/alive", (req, res) => res.send("I'm alive"));
 // Routings
 app.use("/users", user);
 app.use("/recipes", recipes);
-app.use("/", auth);
+app.use("/auth", auth);
 
 
 
