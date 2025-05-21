@@ -1,55 +1,96 @@
 const DButils = require("./DButils");
+const { getRecipeDetails } = require("./recipes_utils");
 
-// TODO: NOT WORKING
+// TODO: DONE
 
 async function markAsFavorite(user_id, recipe_id) {
     try {
         await DButils.execQuery(
-            `INSERT INTO favorite_recipes (user_id, recipe_id) VALUES (?, ?)`,
-            [user_id, recipe_id]
+            `INSERT INTO favorite_recipes (user_id, recipe_id) VALUES ('${user_id}', ${recipe_id})`
         );
+
     } catch (error) {
         console.error('Error marking recipe as favorite:', error);
         throw error;
     }
 }
 
-// TODO: NOT TESTED
+// TODO: DONE
 
 async function getFavoriteRecipes(user_id) {
     try {
-        const recipes_id = await DButils.execQuery(
-            `SELECT recipe_id FROM favorite_recipes WHERE user_id = ?`,
-            [user_id]
+        const recipes = await DButils.execQuery(
+            `SELECT r.*
+         FROM recipes r
+         JOIN favorite_recipes f ON r.recipeId = f.recipe_id
+         WHERE f.user_id = '${user_id}'`
         );
-        return recipes_id;
+        return recipes;
     } catch (error) {
         console.error('Error getting favorite recipes:', error);
         throw error;
     }
 }
 
-// TODO: NOT TESTED
+
+// TODO: DONE
 async function markAsWatched(user_id, recipe_id) {
-    await DButils.execQuery(`insert into watched_recipes(userId, recipeId) values ('${user_id}',${recipe_id})`);
+    await DButils.execQuery(
+        `INSERT INTO watched_recipes(user_id, recipe_id) VALUES ('${user_id}', ${recipe_id})`
+    );
 }
 
+
 // TODO: NOT TESTED
-async function getWatchedRecipes(user_id, limit) { //the limit will be 3 almost all the times
-    const recipes_id = await DButils.execQuery(`select recipeId from watched_recipes where userId='${user_id}' order by time desc limit ${limit}`);
+async function getWatchedRecipes(user_id, limit) {
+    const recipes_id = await DButils.execQuery(
+        `SELECT recipe_id FROM watched_recipes WHERE user_id = ? ORDER BY watched_at DESC LIMIT ?`,
+        [user_id, limit]
+    );
     return recipes_id;
 }
 
-// TODO: NOT TESTED
-async function addRecipe(user_id, recipe_name, proccess_time, vegan_veg, gluten, image, ingridiants, instructions, numOfPortions) {
-    await DButils.execQuery(`insert into recipes(userId, name, proccess_time, vegan_veg, gluten, image, ingridiants, instructions, numOfPortions) values ('${user_id}','${recipe_name}','${proccess_time}','${vegan_veg}','${gluten}','${image}','${ingridiants}','${instructions}','${numOfPortions}')`);
+
+function escapeString(str) {
+    if (typeof str !== "string") return str; // only escape strings
+    return str.replace(/'/g, "''").replace(/\n/g, "\\n");
 }
+
+async function addRecipe(user_id, title, preparationTime, cuisine, imageUrl, ingredients, instructions, servings) {
+    try {
+        const query = `
+        INSERT INTO recipes (userId, title, ingredients, instructions, imageUrl, preparationTime, cuisine, servings)
+        VALUES (
+          '${escapeString(user_id)}',
+          '${escapeString(title)}',
+          '${escapeString(ingredients)}',
+          '${escapeString(instructions)}',
+          '${escapeString(imageUrl)}',
+          ${preparationTime},
+          '${escapeString(cuisine)}',
+          ${servings}
+        )
+      `;
+
+        await DButils.execQuery(query);
+    } catch (error) {
+        console.error("Add recipe error:", error);
+        throw error;
+    }
+}
+
+
 
 // TODO: NOT TESTED
 async function getRecipe(user_id) {
-    const recipes = await DButils.execQuery(`select name,proccess_time,vegan_veg,gluten,image,ingridiants,instructions,numOfPortions from recipes where userId='${user_id}'`);
+    const recipes = await DButils.execQuery(
+        `SELECT recipeId, title, ingredients, instructions, imageUrl, preparationTime, cuisine, servings, createdAt
+       FROM recipes
+       WHERE userId = '${user_id}'`
+    );
     return recipes;
 }
+
 
 // TODO: NOT TESTED
 async function getRecipesPreview(recipesIdsArray) {

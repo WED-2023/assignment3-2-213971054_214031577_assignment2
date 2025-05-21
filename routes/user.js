@@ -6,7 +6,7 @@ const recipe_utils = require("./utils/recipes_utils");
 
 /**
  * Authenticate all incoming requests by middleware
- */
+*/
 router.use(async function (req, res, next) {
   if (req.session && req.session.user_id) {
     try {
@@ -30,7 +30,7 @@ router.use(async function (req, res, next) {
  * This path gets body with recipeId and save this recipe in the favorites list of the logged-in user
  */
 
-// TODO: NOT TESTED
+// TODO: DONE
 router.post('/favorites', async (req, res, next) => {
   try {
     const user_id = req.session.user_id;
@@ -46,41 +46,36 @@ router.post('/favorites', async (req, res, next) => {
  * This path returns the favorites recipes that were saved by the logged-in user
  */
 
-// TODO: NOT TESTED
+// TODO: DONE
 router.get('/favorites', async (req, res, next) => {
   try {
     const user_id = req.session.user_id;
-    let favorite_recipes = {};
-    const recipes_id = await user_utils.getFavoriteRecipes(user_id);
-    let recipes_id_array = [];
-    recipes_id.map((element) => recipes_id_array.push(element.recipe_id));
-    const results = await recipe_utils.getRecipesPreview(recipes_id_array);
+    const results = await user_utils.getFavoriteRecipes(user_id); // <-- now returns full recipes
     res.status(200).send(results);
   } catch (error) {
     next(error);
   }
 });
 
-// TODO: NOT TESTED
+// TODO: DONE
 router.post('/addRecipe', async (req, res, next) => {
   try {
     const user_id = req.session.user_id;
-    const recipe_name = req.body.name;
-    const proccess_time = req.body.proccess_time;
-    const vegan_veg = req.body.vegan_veg;
-    const gluten = req.body.gluten;
-    const image = req.body.image;
-    const ingridiants = req.body.ingridiants;
+    const title = req.body.title;
+    const preparationTime = req.body.preparationTime;
+    const cuisine = req.body.cuisine;
+    const imageUrl = req.body.imageUrl;
+    const ingredients = req.body.ingredients;
     const instructions = req.body.instructions;
-    const numOfPortions = req.body.numOfPortions;
-    await user_utils.addRecipe(user_id, recipe_name, proccess_time, vegan_veg, gluten, image, ingridiants, instructions, numOfPortions);
+    const servings = req.body.servings;
+    await user_utils.addRecipe(user_id, title, preparationTime, cuisine, imageUrl, ingredients, instructions, servings);
     res.status(200).send("The Recipe successfully added");
   } catch (error) {
     next(error);
   }
 });
 
-// TODO: NOT TESTED
+// TODO: DONE
 router.get('/myRecipes', async (req, res, next) => {
   try {
     if (!req.session.user_id) {
@@ -112,9 +107,12 @@ router.post('/addWatched', async (req, res, next) => {
  */
 router.get('/lastWatched', async (req, res, next) => {
   try {
-    const recipes_id = await user_utils.getWatchedRecipes(req.session.user_id, req.query.limit);
-    recipes_id_array = [];
-    recipes_id.map((element) => recipes_id_array.push(element.recipeId)); //extracting the recipe ids into array
+    const user_id = req.session.user_id;
+    const limit = req.query.limit;
+
+    const recipes_id = await user_utils.getWatchedRecipes(user_id, limit);
+    const recipes_id_array = recipes_id.map((element) => element.recipe_id);
+
     const results = await recipe_utils.getRecipesPreview(recipes_id_array);
     res.status(200).send(results);
   } catch (error) {
