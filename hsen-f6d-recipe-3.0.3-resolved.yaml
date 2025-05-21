@@ -1,0 +1,648 @@
+openapi: 3.0.3
+info:
+  title: Recipe App API
+  description: API for a recipe-sharing web application.
+  version: 3.0.3
+servers:
+- url: https://api.example.com/v1
+security:
+- BearerAuth: []
+paths:
+  /recipes:
+    get:
+      tags:
+      - Recipes
+      summary: Get list of all recipes
+      description: Returns a list of all public recipes available in the system.
+      responses:
+        "200":
+          description: A list of recipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Recipe'
+        "500":
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags:
+      - Recipes
+      summary: Create a new recipe
+      description: Allows an authenticated user to add a new recipe to the system.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Recipe'
+        required: true
+      responses:
+        "201":
+          description: Recipe created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+              example:
+                id: abc123
+                title: My Special Pasta
+                description: A quick and tasty pasta dish
+                ingredients:
+                - 200g pasta
+                - 2 tomatoes
+                - Salt
+                steps:
+                - Boil pasta
+                - Chop tomatoes
+                - Mix
+                imageUrl: https://example.com/images/pasta.jpg
+                createdBy: user_456
+                preparationTime: 20 minutes
+                likes: 0
+                isVegan: false
+                isVegetarian: true
+                isGlutenFree: false
+                isViewed: false
+                isFavorite: false
+                servings: 2
+                prepareUrl: /recipes/abc123/prepare
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+      security:
+      - BearerAuth: []
+  /recipes/{id}:
+    get:
+      tags:
+      - Recipes
+      summary: Get recipe details by ID
+      description: Fetches details of a specific recipe by its unique identifier.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Recipe details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+        "404":
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+      - Recipes
+      summary: Delete a recipe
+      description: Deletes a specific recipe created by the authenticated user.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: Recipe deleted successfully
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+      security:
+      - BearerAuth: []
+    patch:
+      tags:
+      - Recipes
+      summary: Update a recipe
+      description: Allows the creator to update specific details of a recipe.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Recipe'
+        required: true
+      responses:
+        "200":
+          description: Recipe updated successfully
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+      security:
+      - BearerAuth: []
+  /recipes/search:
+    get:
+      tags:
+      - Recipes
+      summary: Search recipes
+      description: "Search recipes by query, with optional filters (cuisine, diet, intolerance), sorting, and result count."
+      parameters:
+      - name: query
+        in: query
+        description: Search term for recipe name
+        required: true
+        schema:
+          type: string
+      - name: cuisine
+        in: query
+        description: "Cuisine type (e.g. italian, chinese)"
+        required: false
+        schema:
+          type: string
+          enum:
+          - african
+          - american
+          - british
+          - cajun
+          - caribbean
+          - chinese
+          - eastern european
+          - european
+          - french
+          - german
+          - greek
+          - indian
+          - irish
+          - italian
+          - japanese
+          - jewish
+          - korean
+          - latin american
+          - mediterranean
+          - mexican
+          - middle eastern
+          - nordic
+          - southern
+          - spanish
+          - thai
+          - vietnamese
+      - name: diet
+        in: query
+        description: Diet filter
+        required: false
+        schema:
+          type: string
+          enum:
+          - gluten free
+          - ketogenic
+          - vegetarian
+          - lacto-vegetarian
+          - ovo-vegetarian
+          - vegan
+          - pescetarian
+          - paleo
+          - primal
+          - whole30
+      - name: intolerance
+        in: query
+        description: Intolerance filter
+        required: false
+        schema:
+          type: string
+          enum:
+          - dairy
+          - egg
+          - gluten
+          - grain
+          - peanut
+          - seafood
+          - sesame
+          - shellfish
+          - soy
+          - sulfite
+          - tree nut
+          - wheat
+      - name: sort
+        in: query
+        description: Sort results by preparationTime or popularity
+        required: false
+        schema:
+          type: string
+          enum:
+          - preparationTime
+          - likes
+      - name: limit
+        in: query
+        description: Number of results to return
+        required: false
+        schema:
+          type: integer
+          default: 5
+          enum:
+          - 5
+          - 10
+          - 15
+      responses:
+        "200":
+          description: List of matching recipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Recipe'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "500":
+          $ref: '#/components/responses/InternalError'
+  /auth/register:
+    post:
+      tags:
+      - Auth
+      summary: Register a new user
+      description: Allows a new user to create an account.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/auth_register_body'
+        required: true
+      responses:
+        "201":
+          description: User registered successfully
+        "400":
+          description: "Bad request (e.g., username already exists, password mismatch)"
+        "409":
+          description: Conflict (username already exists)
+        "422":
+          description: Unprocessable entity (password mismatch or invalid input)
+  /auth/login:
+    post:
+      tags:
+      - Auth
+      summary: User login
+      description: Authenticates a user and returns a JWT token.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/auth_login_body'
+        required: true
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+  /auth/me:
+    get:
+      tags:
+      - Auth
+      summary: Get current user info
+      description: Returns the information of the currently authenticated user.
+      responses:
+        "200":
+          description: User profile info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+      security:
+      - BearerAuth: []
+  /favorites:
+    get:
+      tags:
+      - Favorites
+      summary: Get my favorite recipes
+      description: Retrieves a list of the authenticated user's favorite recipes.
+      responses:
+        "200":
+          description: List of favorite recipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipePreview'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+      security:
+      - BearerAuth: []
+  /my-recipes:
+    get:
+      tags:
+      - MyRecipes
+      summary: Get my own recipes
+      description: Retrieves all recipes created by the authenticated user.
+      responses:
+        "200":
+          description: List of user's own recipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipePreview'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+      security:
+      - BearerAuth: []
+  /family-recipes:
+    get:
+      tags:
+      - FamilyRecipes
+      summary: Get my family recipes
+      description: Retrieves recipes marked as family recipes for the user.
+      responses:
+        "200":
+          description: List of family recipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipePreview'
+      security:
+      - BearerAuth: []
+components:
+  schemas:
+    Recipe:
+      required:
+      - ingredients
+      - steps
+      - title
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the recipe
+          example: abc123
+        title:
+          type: string
+          description: Title of the recipe
+          example: Grandma's Famous Soup
+        description:
+          type: string
+          description: Description of the recipe
+          example: "A hearty soup with carrots, potatoes, and love"
+        ingredients:
+          type: array
+          description: Ingredients required for the recipe
+          example:
+          - 2 carrots
+          - 1 potato
+          - 1 onion
+          items:
+            type: string
+        steps:
+          type: array
+          description: Preparation steps for the recipe
+          example:
+          - Chop vegetables
+          - Simmer
+          - Serve
+          items:
+            type: string
+        imageUrl:
+          type: string
+          description: Image URL of the recipe
+          example: https://example.com/images/soup.jpg
+        createdBy:
+          type: string
+          description: ID of the user or family member who created the recipe
+          example: Grandma
+        typicalOccasion:
+          type: string
+          description: When the recipe is typically prepared in the family
+          example: "Passover, Family Reunion"
+        familyImages:
+          type: array
+          description: "Images related to the recipe, including family members or preparation stages"
+          example:
+          - https://example.com/images/grandma_soup.jpg
+          - https://example.com/images/family_cooking.jpg
+          items:
+            type: string
+            format: uri
+        isFamilyRecipe:
+          type: boolean
+          description: Indicates if the recipe is a family recipe
+          example: true
+        servings:
+          type: integer
+          description: Number of servings the recipe provides
+          example: 6
+        preparationTime:
+          type: string
+          description: Estimated preparation time for the recipe
+          example: 45 minutes
+        likes:
+          type: integer
+          description: Number of likes for the recipe
+          example: 20
+        isVegan:
+          type: boolean
+          description: Indicates if the recipe is vegan
+          example: false
+        isVegetarian:
+          type: boolean
+          description: Indicates if the recipe is vegetarian
+          example: true
+        isGlutenFree:
+          type: boolean
+          description: Indicates if the recipe is gluten-free
+          example: false
+        isViewed:
+          type: boolean
+          description: Indicates if the current user has viewed the recipe
+          example: false
+        isFavorite:
+          type: boolean
+          description: Indicates if the recipe is in the user's favorites
+          example: true
+    RecipePreview:
+      required:
+      - id
+      - imageUrl
+      - isFavorite
+      - isGlutenFree
+      - isVegan
+      - isVegetarian
+      - isViewed
+      - likes
+      - preparationTime
+      - title
+      type: object
+      properties:
+        id:
+          type: string
+          description: Recipe ID
+          example: abc123
+        title:
+          type: string
+          description: Recipe title
+          example: Chocolate Cake
+        imageUrl:
+          type: string
+          description: URL of recipe image
+          example: https://example.com/images/cake.jpg
+        preparationTime:
+          type: string
+          description: Preparation time
+          example: 30 minutes
+        likes:
+          type: integer
+          description: Popularity count
+          example: 45
+        isVegan:
+          type: boolean
+          example: false
+        isVegetarian:
+          type: boolean
+          example: true
+        isGlutenFree:
+          type: boolean
+          example: false
+        isViewed:
+          type: boolean
+          description: Whether user has viewed this recipe
+          example: true
+        isFavorite:
+          type: boolean
+          description: Whether this recipe is in user's favorites
+          example: true
+        isFamilyRecipe:
+          type: boolean
+          description: Indicates if the recipe is a family recipe (passed down or specific to family events)
+          example: true
+    User:
+      required:
+      - email
+      - name
+      - password
+      type: object
+      properties:
+        name:
+          type: string
+          description: Full name of the user
+          example: Alice Johnson
+        email:
+          type: string
+          description: User's email address
+          example: alice@example.com
+        password:
+          type: string
+          description: User's account password
+          example: SecurePass123!
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT token returned after successful login
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Error message
+          example: Unauthorized access
+    auth_register_body:
+      required:
+      - country
+      - email
+      - firstName
+      - lastName
+      - password
+      - passwordConfirmation
+      - username
+      type: object
+      properties:
+        username:
+          maxLength: 8
+          minLength: 3
+          pattern: "^[a-zA-Z]+$"
+          type: string
+          description: "The user's unique username (3-8 characters, letters only)."
+          example: johnDoe
+        firstName:
+          type: string
+          description: The user's first name.
+          example: John
+        lastName:
+          type: string
+          description: The user's last name.
+          example: Doe
+        country:
+          type: string
+          description: The user's country.
+          example: USA
+          enum:
+          - USA
+          - Canada
+          - Israel
+          - Germany
+          - France
+        password:
+          maxLength: 10
+          minLength: 5
+          pattern: "(?=.*[0-9])(?=.*[!@#$%^&*])"
+          type: string
+          description: "User's password (5-10 characters, includes at least one number and one special character)."
+          example: Password123!
+        passwordConfirmation:
+          type: string
+          description: Confirmation of the user's password (should match the password).
+          example: Password123!
+        email:
+          type: string
+          description: The user's email address.
+          format: email
+          example: john@example.com
+    auth_login_body:
+      required:
+      - email
+      - password
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
