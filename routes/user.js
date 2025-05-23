@@ -89,7 +89,7 @@ router.get('/myRecipes', async (req, res, next) => {
   }
 });
 
-// TODO: NOT TESTED
+// TODO: DONE
 //This path returns the last watched recipes that were saved by the logged-in user
 router.post('/addWatched', async (req, res, next) => {
   try {
@@ -102,6 +102,7 @@ router.post('/addWatched', async (req, res, next) => {
   }
 })
 
+// TODO: DONE
 /**
  * This path returns the last watched recipes that were saved by the logged-in user
  */
@@ -119,5 +120,39 @@ router.get('/lastWatched', async (req, res, next) => {
     next(error);
   }
 });
+
+//TODO : DONE
+router.post("/familyRecipe", async (req, res, next) => {
+  try {
+    const userId = req.session.user_id;
+    const id = await user_utils.addFamilyRecipe(userId, req.body);
+    res.status(201).send({ message: "familyRecipe added", recipeId: id });
+  } catch (error) {
+    next(error);
+  }
+});
+
+//TODO : DONE
+router.get("/myFamilyRecipes", async (req, res, next) => {
+  try {
+    const userId = req.session.user_id;
+    const result = await DButils.execQuery(
+        `SELECT * FROM family_recipes WHERE userId = ${userId}`
+    );
+
+    const parsed = result.map(recipe => ({
+      ...recipe,
+      ingredients: JSON.parse(recipe.ingredients),
+      instructions: JSON.parse(recipe.instructions),
+      familyImages: JSON.parse(recipe.familyImages || "[]")
+    }));
+
+    res.send(parsed);
+
+  } catch (error) {
+    next(error);
+  }
+});
+
 
 module.exports = router;

@@ -42,20 +42,49 @@ async function getRecipeInformation(recipe_id) {
         }
     });
 }
+async function getRecipeDetails(recipeId) {
+    const localResult = await DButils.execQuery(`SELECT * FROM recipes WHERE recipeId = ${recipeId}`);
+    if (localResult.length > 0) {
+        const recipe = localResult[0];
+        return {
+            id: recipe.recipeId,
+            title: recipe.title,
+            readyInMinutes: recipe.readyInMinutes,
+            image: recipe.imageUrl,
+            popularity: recipe.aggregateLikes,
+            vegan: recipe.vegan,
+            vegetarian: recipe.vegetarian,
+            glutenFree: recipe.glutenFree,
+            servings: recipe.servings,
+            extendedIngredients: JSON.parse(recipe.extendedIngredients || "[]"),
+            analyzedInstructions: JSON.parse(recipe.analyzedInstructions || "[]"),
+            source: "local"
+        };
+    }
 
-async function getRecipeDetails(recipe_id) {
-    let recipe_info = await getRecipeInformation(recipe_id);
-    let { id, title, readyInMinutes, image, aggregateLikes, vegan, vegetarian, glutenFree } = recipe_info.data;
-
-    return {
-        id: id,
-        title: title,
-        readyInMinutes: readyInMinutes,
-        image: image,
-        popularity: aggregateLikes,
-        vegan: vegan,
-        vegetarian: vegetarian,
-        glutenFree: glutenFree,
+    try {
+        const response = await getRecipeInformation(recipeId);
+        const recipe = response.data;
+        return {
+            id: recipe.id,
+            title: recipe.title,
+            readyInMinutes: recipe.readyInMinutes,
+            image: recipe.image,
+            popularity: recipe.aggregateLikes,
+            vegan: recipe.vegan,
+            vegetarian: recipe.vegetarian,
+            glutenFree: recipe.glutenFree,
+            servings: recipe.servings,
+            extendedIngredients: recipe.extendedIngredients.map(ing => ({
+                id: ing.id,
+                name: ing.name,
+                original: ing.original
+            })),
+            analyzedInstructions: recipe.analyzedInstructions,
+            source: "spoonacular"
+        };
+    } catch (error) {
+        throw { status: 404, message: "Recipe not found in either source" };
     }
 }
 
@@ -129,21 +158,82 @@ async function getRandomRecipes() {
 const DButils = require("./DButils");
 
 async function createRecipe(userId, recipeData) {
-    const result = await DButils.execQuery(
-        `INSERT INTO recipes (title, ingredients, instructions, imageUrl, preparationTime, cuisine, servings, userId)
-        VALUES ('${recipeData.title}', '${JSON.stringify(recipeData.ingredients)}', '${recipeData.instructions}',
-        '${recipeData.imageUrl}', ${recipeData.preparationTime}, '${recipeData.cuisine}', ${recipeData.servings}, ${userId})`
-    );
+    const {
+        title,
+        ingredients,
+        instructions,
+        imageUrl,
+        preparationTime,
+        cuisine,
+        servings,
+        readyInMinutes,
+        aggregateLikes,
+        vegan,
+        vegetarian,
+        glutenFree,
+        extendedIngredients,
+        analyzedInstructions
+    } = recipeData;
+
+    const query = `
+    INSERT INTO recipes (
+      title,
+      ingredients,
+      instructions,
+      imageUrl,
+      preparationTime,
+      cuisine,
+      servings,
+      userId,
+      createdAt,
+      readyInMinutes,
+      aggregateLikes,
+      vegan,
+      vegetarian,
+      glutenFree,
+      extendedIngredients,
+      analyzedInstructions
+    ) VALUES (
+      '${title}',
+      '${JSON.stringify(ingredients)}',
+      '${JSON.stringify(instructions)}',
+      '${imageUrl}',
+      ${preparationTime},
+      '${cuisine}',
+      ${servings},
+      ${userId},
+      NOW(),
+      ${readyInMinutes},
+      ${aggregateLikes},
+      ${vegan},
+      ${vegetarian},
+      ${glutenFree},
+      '${JSON.stringify(extendedIngredients)}',
+      '${JSON.stringify(analyzedInstructions)}'
+    )
+  `;
+
+    const result = await DButils.execQuery(query);
     return result.insertId;
 }
 
 
+
 async function getRecipesPreview(recipesIdArray) {
-    const placeholders = recipesIdArray.map(() => '?').join(',');
-    const query = `SELECT id, title, imageUrl, preparationTime FROM recipes WHERE id IN (${placeholders})`;
-    const result = await DButils.execQuery(query, recipesIdArray);
-    return result;
+    if (!recipesIdArray || recipesIdArray.length === 0) return [];
+
+    const safeIds = recipesIdArray.map(id => parseInt(id)).filter(Number.isInteger);
+    if (safeIds.length === 0) return [];
+
+    const query = `
+        SELECT recipeId AS id, title, imageUrl, preparationTime
+        FROM recipes
+        WHERE recipeId IN (${safeIds.join(',')})
+    `;
+
+    return await DButils.execQuery(query);
 }
+
 
 module.exports = {
     createRecipe,

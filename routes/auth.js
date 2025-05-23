@@ -42,13 +42,13 @@ router.post("/Register", async (req, res, next) => {
 
     // add the new username
     let hash_password = bcrypt.hashSync(
-      user_details.password,
-      parseInt(process.env.bcrypt_saltRounds)
+        user_details.password,
+        parseInt(process.env.bcrypt_saltRounds)
     );
 
     await DButils.execQuery(
-      `INSERT INTO users (username, firstname, lastname, country, password, email, profilePic) VALUES ('${user_details.username}', '${user_details.firstname}', '${user_details.lastname}',
-      '${user_details.country}', '${hash_password}', '${user_details.email}', '${user_details.profilePic}')`
+        `INSERT INTO users (username, firstname, lastname, country, password, email, profilePic) VALUES ('${user_details.username}', '${user_details.firstname}', '${user_details.lastname}',
+                                                                                                         '${user_details.country}', '${hash_password}', '${user_details.email}', '${user_details.profilePic}')`
     );
     res.status(201).send({ message: "user created", success: true });
   } catch (error) {
@@ -65,9 +65,9 @@ router.post("/Login", async (req, res, next) => {
 
     // check that the password is correct
     const user = (
-      await DButils.execQuery(
-        `SELECT * FROM users WHERE email = '${req.body.email}'`
-      )
+        await DButils.execQuery(
+            `SELECT * FROM users WHERE email = '${req.body.email}'`
+        )
     )[0];
 
     if (!bcrypt.compareSync(req.body.password, user.password)) {

@@ -22,9 +22,7 @@ router.get("/random", async (req, res, next) => {
   }
 });
 
-
 // SEARCH
-
 // TODO: NOT TESTED
 router.get("/search", async (req, res, next) => {
   try {
@@ -46,11 +44,14 @@ router.get("/search", async (req, res, next) => {
 
 // CREATE
 
-// TODO: NOT WORKING
+// TODO: Done
 router.post("/", async (req, res, next) => {
   try {
-    const userResult = await require("./utils/DButils").execQuery(`SELECT id FROM users WHERE username = 'testuser'`);
-    const userId = userResult[0].id;
+    if (!req.session || !req.session.user_id) {
+      return res.status(401).send("User not authenticated");
+    }
+
+    const userId = req.session.user_id;
     const recipeData = req.body;
     const recipeId = await recipes_utils.createRecipe(userId, recipeData);
     res.status(201).send({ id: recipeId });
@@ -60,6 +61,7 @@ router.post("/", async (req, res, next) => {
 });
 
 // GET BY ID
+// TODO : DONE
 router.get("/:recipeId", async (req, res, next) => {
   try {
     const recipe = await recipes_utils.getRecipeDetails(req.params.recipeId);

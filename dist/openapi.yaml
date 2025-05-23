@@ -15,7 +15,7 @@ paths:
     get:
       tags:
         - Recipes
-      summary: Get list of all recipes
+      summary: Get list of all public recipes
       description: Returns a list of all public recipes available in the system.
       responses:
         "200":
@@ -25,56 +25,152 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Recipe'
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 649567
+                    title:
+                      type: string
+                      example: "Lemon Coconut Granola"
+                    readyInMinutes:
+                      type: integer
+                      example: 45
+                    image:
+                      type: string
+                      example: "https://img.spoonacular.com/recipes/649567-556x370.jpg"
+                    popularity:
+                      type: integer
+                      example: 32
+                    vegan:
+                      type: boolean
+                      example: false
+                    vegetarian:
+                      type: boolean
+                      example: true
+                    glutenFree:
+                      type: boolean
+                      example: true
         "500":
-          $ref: '#/components/responses/InternalError'
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Internal server error"
+
     post:
       tags:
         - Recipes
       summary: Create a new recipe
-      description: Allows an authenticated user to add a new recipe to the system.
+      description: Allows an authenticated user to add a new Spoonacular-style recipe to the system.
+      security:
+        - cookieAuth: [ ]
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Recipe'
-        required: true
+              type: object
+              required:
+                - title
+                - imageUrl
+                - preparationTime
+                - cuisine
+                - servings
+                - readyInMinutes
+                - aggregateLikes
+                - vegan
+                - vegetarian
+                - glutenFree
+                - extendedIngredients
+                - analyzedInstructions
+              properties:
+                title:
+                  type: string
+                imageUrl:
+                  type: string
+                  format: uri
+                preparationTime:
+                  type: integer
+                cuisine:
+                  type: string
+                servings:
+                  type: integer
+                readyInMinutes:
+                  type: integer
+                aggregateLikes:
+                  type: integer
+                vegan:
+                  type: boolean
+                vegetarian:
+                  type: boolean
+                glutenFree:
+                  type: boolean
+                extendedIngredients:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      original:
+                        type: string
+                analyzedInstructions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      steps:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            number:
+                              type: integer
+                            step:
+                              type: string
       responses:
         "201":
           description: Recipe created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Recipe'
+                type: object
+                properties:
+                  id:
+                    type: integer
               example:
-                id: abc123
-                title: My Special Pasta
-                description: A quick and tasty pasta dish
-                ingredients:
-                  - 200g pasta
-                  - 2 tomatoes
-                  - Salt
-                steps:
-                  - Boil pasta
-                  - Chop tomatoes
-                  - Mix
-                imageUrl: https://example.com/images/pasta.jpg
-                createdBy: user_456
-                preparationTime: 20 minutes
-                likes: 0
-                isVegan: false
-                isVegetarian: true
-                isGlutenFree: false
-                isViewed: false
-                isFavorite: false
-                servings: 2
-                prepareUrl: /recipes/abc123/prepare
+                id: 21
         "400":
-          $ref: '#/components/responses/BadRequest'
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              example:
+                message: Invalid input data
         "401":
-          $ref: '#/components/responses/Unauthorized'
-      security:
-        - BearerAuth: []
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              example:
+                message: User not authenticated
   /recipes/{id}:
     get:
       tags:
@@ -244,29 +340,41 @@ paths:
           description: "Bad request (e.g., username already exists, password mismatch)"
         "409":
           description: Conflict (username already exists)
-        "422":
-          description: Unprocessable entity (password mismatch or invalid input)
+
   /auth/login:
     post:
       tags:
         - Auth
       summary: User login
-      description: Authenticates a user and returns a JWT token.
+      description: Authenticates a user and returns the username.
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/auth_login_body'
-        required: true
       responses:
         "200":
           description: Login successful
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
+                type: object
+                properties:
+                  username:
+                    type: string
+                    example: Hsen
         "401":
-          $ref: '#/components/responses/Unauthorized'
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Unauthorized access
+
   /auth/logout:
     post:
       tags:
@@ -598,15 +706,15 @@ components:
           pattern: "^[a-zA-Z]+$"
           type: string
           description: "The user's unique username (3-8 characters, letters only)."
-          example: johnDoe
+          example: Hsen
         firstName:
           type: string
           description: The user's first name.
-          example: John
+          example: Hsen
         lastName:
           type: string
           description: The user's last name.
-          example: Doe
+          example: Hsnen
         country:
           type: string
           description: The user's country.
@@ -623,16 +731,16 @@ components:
           pattern: "(?=.*[0-9])(?=.*[!@#$%^&*])"
           type: string
           description: "User's password (5-10 characters, includes at least one number and one special character)."
-          example: Password123!
+          example: Hsen1!
         confirmPassword:
           type: string
           description: Confirmation of the user's password (should match the password).
-          example: Password123!
+          example: Hsen1!
         email:
           type: string
           description: The user's email address.
           format: email
-          example: john@example.com
+          example: hsen@gmail.com
     auth_login_body:
       required:
         - email
@@ -641,8 +749,10 @@ components:
       properties:
         email:
           type: string
+          example: hsen@gmail.com
         password:
           type: string
+          example: Hsen1!
     addWatched:
       properties:
         recipeId:
@@ -749,3 +859,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: connect.sid
