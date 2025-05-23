@@ -23,7 +23,7 @@ router.get("/random", async (req, res, next) => {
 });
 
 // SEARCH
-// TODO: NOT TESTED
+// TODO: DONE
 router.get("/search", async (req, res, next) => {
   try {
     const {
@@ -43,7 +43,6 @@ router.get("/search", async (req, res, next) => {
 });
 
 // CREATE
-
 // TODO: Done
 router.post("/", async (req, res, next) => {
   try {

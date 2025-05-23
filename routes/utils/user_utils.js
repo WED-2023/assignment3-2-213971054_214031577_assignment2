@@ -1,5 +1,6 @@
 const DButils = require("./DButils");
 const { getRecipeDetails } = require("./recipes_utils");
+const axios = require("axios"); // Make sure axios is imported at the top
 
 // TODO: DONE
 async function markAsFavorite(user_id, recipe_id) {
@@ -16,15 +17,26 @@ async function markAsFavorite(user_id, recipe_id) {
 // TODO: DONE
 async function getFavoriteRecipes(user_id) {
     try {
-        const recipes = await DButils.execQuery(
-            `SELECT r.*
-         FROM recipes r
-         JOIN favorite_recipes f ON r.recipeId = f.recipe_id
-         WHERE f.user_id = '${user_id}'`
+        const favorites = await DButils.execQuery(
+            `SELECT recipe_id FROM favorite_recipes WHERE user_id = '${user_id}'`
         );
-        return recipes;
+
+        const recipeIds = favorites.map(f => f.recipe_id);
+
+        const recipes = await Promise.all(
+            recipeIds.map(async (id) => {
+                try {
+                    return await getRecipeDetails(id); // returns from local DB or fetches from Spoonacular
+                } catch (err) {
+                    console.error(`Failed to load recipe ${id}:`, err.message);
+                    return null; // skip if not found
+                }
+            })
+        );
+
+        return recipes.filter(r => r !== null); // remove failed recipes
     } catch (error) {
-        console.error('Error getting favorite recipes:', error);
+        console.error("Error getting favorite recipes:", error);
         throw error;
     }
 }
@@ -56,28 +68,28 @@ function escapeString(str) {
     if (typeof str !== "string") return str; // only escape strings
     return str.replace(/'/g, "''").replace(/\n/g, "\\n");
 }
-
-async function addRecipe(user_id, title, preparationTime, cuisine, imageUrl, ingredients, instructions, servings) {
-    try {
-        const query = `
-        INSERT INTO recipes (userId, title, ingredients, instructions, imageUrl, preparationTime, cuisine, servings)
-        VALUES (
-          '${escapeString(user_id)}',
-          '${escapeString(title)}',
-          '${escapeString(ingredients)}',
-          '${escapeString(instructions)}',
-          '${escapeString(imageUrl)}',
-          ${preparationTime},
-          '${escapeString(cuisine)}',
-          ${servings}
-        )
-      `;
-        await DButils.execQuery(query);
-    } catch (error) {
-        console.error("Add recipe error:", error);
-        throw error;
-    }
-}
+//
+// async function addRecipe(user_id, title, preparationTime, cuisine, imageUrl, ingredients, instructions, servings) {
+//     try {
+//         const query = `
+//         INSERT INTO recipes (userId, title, ingredients, instructions, imageUrl, preparationTime, cuisine, servings)
+//         VALUES (
+//           '${escapeString(user_id)}',
+//           '${escapeString(title)}',
+//           '${escapeString(ingredients)}',
+//           '${escapeString(instructions)}',
+//           '${escapeString(imageUrl)}',
+//           ${preparationTime},
+//           '${escapeString(cuisine)}',
+//           ${servings}
+//         )
+//       `;
+//         await DButils.execQuery(query);
+//     } catch (error) {
+//         console.error("Add recipe error:", error);
+//         throw error;
+//     }
+// }
 
 // TODO: DONE
 async function getRecipe(user_id) {
@@ -97,7 +109,6 @@ async function getRecipesPreview(recipesIdsArray) {
 }
 
 //TODO : DONE
-
 async function addFamilyRecipe(userId, data) {
     const {
         title,

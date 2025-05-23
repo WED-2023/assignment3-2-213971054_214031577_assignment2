@@ -409,7 +409,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/addRecipe'
+              $ref: '#/components/schemas/addFavoriteRecipe'
         required: true
       responses:
         "200":
@@ -434,22 +434,6 @@ paths:
           description: OK
         "404":
           description: recipe not found
-  /users/addRecipe:
-    post:
-      tags:
-      - Users
-      summary: add to the database a recipe that the user has
-      description: add to database the user's recipe
-      operationId: addRecipe
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/addRecipe'
-        required: true
-      responses:
-        "200":
-          description: OK
   /users/myRecipes:
     get:
       tags:
@@ -488,25 +472,170 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/getRecipes'
-  /family-recipes:
+  /users/myFamilyRecipes:
     get:
       tags:
-        - FamilyRecipes
+        - Users
       summary: Get my family recipes
-      description: Retrieves recipes marked as family recipes for the user.
+      description: Retrieves all family recipes created by the logged-in user.
       responses:
         "200":
-          description: List of family recipes
+          description: A list of the user's family recipes
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/RecipePreview'
+                  $ref: '#/components/schemas/FamilyRecipe'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Not authenticated
       security:
-        - BearerAuth: []
+        - cookieAuth: [ ]
+
+  /users/familyRecipe:
+    post:
+      tags:
+        - Users
+      summary: Add a new family recipe
+      description: Allows an authenticated user to add a family recipe with metadata and images.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FamilyRecipeInput'
+      responses:
+        "201":
+          description: Family recipe created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: familyRecipe added
+                  recipeId:
+                    type: integer
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Not authenticated
+      security:
+        - cookieAuth: [ ]
+
+
+
 components:
   schemas:
+    FamilyRecipe:
+      type: object
+      properties:
+        recipeId:
+          type: integer
+          example: 123
+        userId:
+          type: integer
+          example: 7
+        title:
+          type: string
+          example: Grandma's Stuffed Peppers
+        ownerName:
+          type: string
+          example: Grandma Sara
+        eventOccasion:
+          type: string
+          example: Passover
+        ingredients:
+          type: array
+          items:
+            type: string
+          example: [ "4 bell peppers", "1 cup rice", "2 tbsp tomato paste" ]
+        instructions:
+          type: array
+          items:
+            type: string
+          example: [ "Cut the peppers", "Mix the filling", "Bake for 45 minutes" ]
+        mainImageUrl:
+          type: string
+          format: uri
+          example: https://example.com/images/stuffed-peppers.jpg
+        familyImages:
+          type: array
+          items:
+            type: string
+            format: uri
+          example:
+            - https://example.com/images/grandma-cooking.jpg
+            - https://example.com/images/finished-dish.jpg
+
+    FamilyRecipeInput:
+      type: object
+      required:
+        - title
+        - ownerName
+        - eventOccasion
+        - ingredients
+        - instructions
+        - mainImageUrl
+      properties:
+        title:
+          type: string
+          example: Grandma's Stuffed Peppers
+        ownerName:
+          type: string
+          example: Grandma Sara
+        eventOccasion:
+          type: string
+          example: Passover
+        ingredients:
+          type: array
+          description: List of ingredients in plain text
+          items:
+            type: string
+          example: [ "4 bell peppers", "1 cup rice", "2 tbsp tomato paste" ]
+        instructions:
+          type: array
+          description: Step-by-step cooking instructions
+          items:
+            type: string
+          example: [ "Cut the peppers", "Mix the filling", "Bake for 45 minutes" ]
+        mainImageUrl:
+          type: string
+          format: uri
+          example: https://example.com/images/stuffed-peppers.jpg
+        familyImages:
+          type: array
+          description: Optional additional images
+          items:
+            type: string
+            format: uri
+          example:
+            - https://example.com/images/grandma-cooking.jpg
+            - https://example.com/images/finished-dish.jpg
+    addFavoriteRecipe:
+      type: object
+      required:
+        - recipeId
+      properties:
+        recipeId:
+          type: integer
+          description: The ID of the recipe to add to the user's favorites
+          example: 650546
     Recipe:
       required:
         - ingredients
@@ -517,58 +646,70 @@ components:
         id:
           type: string
           description: Unique identifier for the recipe
-          example: abc123
+          example: "650546"
         title:
           type: string
           description: Title of the recipe
-          example: Grandma's Famous Soup
+          example: "Macaroni and Cheese Gratin"
         description:
           type: string
           description: Description of the recipe
-          example: "A hearty soup with carrots, potatoes, and love"
+          example: "Creamy baked macaroni topped with crispy breadcrumbs and three cheeses."
         ingredients:
           type: array
           description: Ingredients required for the recipe
           example:
-            - 2 carrots
-            - 1 potato
-            - 1 onion
+            - 1 1/2 cups herbed bread crumbs
+            - 1 tablespoon Butter or margarine
+            - 2 cups grated cheddar
+            - 1 pound elbow macaroni
+            - 1 tablespoon Flour
+            - 2 cups grated gruyere
+            - 4 cups milk
+            - 1/4 teaspoon nutmeg
+            - 1/4 cup grated Parmesan
+            - 1/3 cup chopped parsley
+            - A few drops hot pepper sauce
+            - 1/2 teaspoon Salt
           items:
             type: string
         steps:
           type: array
           description: Preparation steps for the recipe
           example:
-            - Chop vegetables
-            - Simmer
-            - Serve
+            - Bring a pot of water to a boil.
+            - Add salt and macaroni; cook until almost al dente.
+            - In a separate pot, melt butter, add flour, then gradually whisk in milk until thick.
+            - Stir in cheeses, nutmeg, hot sauce, and salt; mix with cooked macaroni.
+            - Pour mixture into baking dish; optionally add tomato slices.
+            - Mix melted butter with breadcrumbs and sprinkle over top.
+            - Bake at 400°F for 10–15 minutes until golden brown.
+            - Serve immediately.
           items:
             type: string
         imageUrl:
           type: string
           description: Image URL of the recipe
-          example: https://example.com/images/soup.jpg
+          example: "https://img.spoonacular.com/recipes/650546-556x370.jpg"
         createdBy:
           type: string
           description: ID of the user or family member who created the recipe
-          example: Grandma
+          example: "spoonacular"
         typicalOccasion:
           type: string
           description: When the recipe is typically prepared in the family
-          example: "Passover, Family Reunion"
+          example: "Holiday Dinner"
         familyImages:
           type: array
           description: "Images related to the recipe, including family members or preparation stages"
-          example:
-            - https://example.com/images/grandma_soup.jpg
-            - https://example.com/images/family_cooking.jpg
+          example: []
           items:
             type: string
             format: uri
         isFamilyRecipe:
           type: boolean
           description: Indicates if the recipe is a family recipe
-          example: true
+          example: false
         servings:
           type: integer
           description: Number of servings the recipe provides
@@ -576,11 +717,11 @@ components:
         preparationTime:
           type: string
           description: Estimated preparation time for the recipe
-          example: 45 minutes
+          example: "45 minutes"
         likes:
           type: integer
           description: Number of likes for the recipe
-          example: 20
+          example: 2
         isVegan:
           type: boolean
           description: Indicates if the recipe is vegan
@@ -588,7 +729,7 @@ components:
         isVegetarian:
           type: boolean
           description: Indicates if the recipe is vegetarian
-          example: true
+          example: false
         isGlutenFree:
           type: boolean
           description: Indicates if the recipe is gluten-free
@@ -600,7 +741,8 @@ components:
         isFavorite:
           type: boolean
           description: Indicates if the recipe is in the user's favorites
-          example: true
+          example: false
+
     RecipePreview:
       required:
         - id
@@ -656,32 +798,26 @@ components:
           type: boolean
           description: Indicates if the recipe is a family recipe (passed down or specific to family events)
           example: true
-    User:
-      required:
-        - email
-        - name
-        - password
-      type: object
-      properties:
-        name:
-          type: string
-          description: Full name of the user
-          example: Alice Johnson
-        email:
-          type: string
-          description: User's email address
-          example: alice@example.com
-        password:
-          type: string
-          description: User's account password
-          example: SecurePass123!
-    AuthResponse:
-      type: object
-      properties:
-        token:
-          type: string
-          description: JWT token returned after successful login
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+#    User:
+#      required:
+#        - email
+#        - name
+#        - password
+#      type: object
+#      properties:
+#        name:
+#          type: string
+#          description: Full name of the user
+#          example: Alice Johnson
+#        email:
+#          type: string
+#          description: User's email address
+#          example: alice@example.com
+#        password:
+#          type: string
+#          description: User's account password
+#          example: SecurePass123!
+
     Error:
       type: object
       properties:
@@ -785,50 +921,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/getRecipe'
-    addRecipe:
-      properties:
-        name:
-          type: string
-          example: pasta
-        proccess_time:
-          type: string
-          example: 30 min
-        vegan_veg:
-          type: string
-          example: vegan
-        gluten:
-          type: integer
-          example: 1
-        image:
-          type: string
-        ingridiants:
-          type: string
-        instructions:
-          type: string
-        numOfPortions:
-          type: integer
-          example: 4
-    Recipe_amount:
-      type: object
-      properties:
-        amount:
-          type: number
-          description: The amount required from the ingridiant
-          example: 1.5
-        measure:
-          type: string
-          description: The name of the unit's measure
-          example: kg
-    Recipe_ingredients:
-      type: object
-      properties:
-        ingredient:
-          type: string
-          description: A single ingredient name
-          example: sugar
-        amount:
-          $ref: '#/components/schemas/Recipe_amount'
-
   responses:
     BadRequest:
       description: Bad request
@@ -854,6 +946,7 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+
   securitySchemes:
     BearerAuth:
       type: http

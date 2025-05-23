@@ -57,23 +57,23 @@ router.get('/favorites', async (req, res, next) => {
   }
 });
 
-// TODO: DONE
-router.post('/addRecipe', async (req, res, next) => {
-  try {
-    const user_id = req.session.user_id;
-    const title = req.body.title;
-    const preparationTime = req.body.preparationTime;
-    const cuisine = req.body.cuisine;
-    const imageUrl = req.body.imageUrl;
-    const ingredients = req.body.ingredients;
-    const instructions = req.body.instructions;
-    const servings = req.body.servings;
-    await user_utils.addRecipe(user_id, title, preparationTime, cuisine, imageUrl, ingredients, instructions, servings);
-    res.status(200).send("The Recipe successfully added");
-  } catch (error) {
-    next(error);
-  }
-});
+// // TODO: DONE
+// //router.post('/addRecipe', async (req, res, next) => {
+//   //try {
+//     //const user_id = req.session.user_id;
+//     const title = req.body.title;
+//     const preparationTime = req.body.preparationTime;
+//     const cuisine = req.body.cuisine;
+//     const imageUrl = req.body.imageUrl;
+//     const ingredients = req.body.ingredients;
+//     const instructions = req.body.instructions;
+//     const servings = req.body.servings;
+//     await user_utils.addRecipe(user_id, title, preparationTime, cuisine, imageUrl, ingredients, instructions, servings);
+//     res.status(200).send("The Recipe successfully added");
+//   } catch (error) {
+//     next(error);
+//   }
+// });
 
 // TODO: DONE
 router.get('/myRecipes', async (req, res, next) => {

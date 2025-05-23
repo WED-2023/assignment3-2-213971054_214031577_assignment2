@@ -109,7 +109,7 @@ async function getAllRecipes() {
     }));
 }
 
-// TODO: TEST THIS FUNCTION
+// TODO: DONE
 async function searchRecipes({ query, cuisine, diet, intolerance, sort, limit }) {
     try {
         const response = await axios.get(`${api_domain}/complexSearch`, {
