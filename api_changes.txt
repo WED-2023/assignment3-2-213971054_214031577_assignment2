@@ -1,0 +1,19 @@
+API Changes (Old vs. New)
+
+What's Changed in the New API:
+
+- Simplified structure: Only includes 3 sections now — Auth, Recipes, and Users.
+- Removed endpoints:
+  • PATCH /recipes/{id} (update recipe)
+  • DELETE /recipes/{id} (delete recipe)
+  • GET /auth/me (get current user info)
+- Users section merged:
+  • Old endpoints like /favorites, /my-recipes, /family-recipes are now part of /users/ paths.
+  • Example: /favorites ➝ /users/favorites, /my-recipes ➝ /users/myRecipes
+- More functionality in Users Added:
+  • POST /users/addWatched.
+  • GET /users/myRecipes.
+  • POST /users/FamilyRecipe.
+  • GET /users/myFamilyRecipes.
+  • GET /users/lastWatched.
+  • GET and POST /users/favorites.
