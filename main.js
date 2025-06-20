@@ -8,6 +8,14 @@ const DButils = require("./routes/utils/DButils");
 var cors = require('cors')
 
 var app = express();
+const corsConfig = {
+    origin: 'http://localhost:8080', // your frontend dev server
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+};
+
+app.use(cors(corsConfig));
+app.options('*', cors(corsConfig));
 app.use(logger("dev")); //logger
 app.use(express.json()); // parse application/json
 app.use(
@@ -23,6 +31,7 @@ app.use(
     //the session will be extended by activeDuration milliseconds
   })
 );
+
 app.use(express.urlencoded({ extended: false })); // parse application/x-www-form-urlencoded
 app.use(express.static(path.join(__dirname, "public"))); //To serve static files such as images, CSS files, and JavaScript files
 //local:
@@ -48,6 +57,8 @@ app.get("/", function (req, res) {
 
 // app.use(cors(corsConfig));
 // app.options("*", cors(corsConfig));
+
+
 
 var port = process.env.PORT || "80"; //local=3000 remote=80
 //#endregion
@@ -81,18 +92,11 @@ app.use("/users", user);
 app.use("/recipes", recipes);
 app.use("/auth", auth);
 
-
-
-
-
-
 // Default router
 app.use(function (err, req, res, next) {
   console.error(err);
   res.status(err.status || 500).send({ message: err.message, success: false });
 });
-
-
 
 const server = app.listen(port, () => {
   console.log(`Server listen on port ${port}`);

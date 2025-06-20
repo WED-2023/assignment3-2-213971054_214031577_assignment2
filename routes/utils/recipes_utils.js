@@ -1,6 +1,8 @@
 const axios = require("axios");
 const api_domain = "https://api.spoonacular.com/recipes";
-const api_key = "52cf84097733427c9e63f65d8cc26f57";
+//const api_key = "52cf84097733427c9e63f65d8cc26f57";
+const api_key = "18dbd034d72142bbb0928a0d11c06793";
+//const api_key = "a4ded10683114a66a4b75c953e05f9cf";
 
 function formatAsList(listOfRecipes) {
     recipes = []
@@ -11,6 +13,12 @@ function formatAsList(listOfRecipes) {
         amount: listOfRecipes.length,
         recipes: recipes
     };
+}
+
+function normalizeImageUrl(img) {
+    if (!img) return "https://via.placeholder.com/400x250?text=No+Image";
+    if (img.startsWith("http")) return img;
+    return `http://localhost:80/${img.replace(/^\/+/, "")}`;
 }
 
 function format(recipe_data) {
@@ -50,7 +58,7 @@ async function getRecipeDetails(recipeId) {
             id: recipe.recipeId,
             title: recipe.title,
             readyInMinutes: recipe.readyInMinutes,
-            image: recipe.imageUrl,
+            image: normalizeImageUrl(recipe.imageUrl),
             popularity: recipe.aggregateLikes,
             vegan: recipe.vegan,
             vegetarian: recipe.vegetarian,
@@ -69,7 +77,7 @@ async function getRecipeDetails(recipeId) {
             id: recipe.id,
             title: recipe.title,
             readyInMinutes: recipe.readyInMinutes,
-            image: recipe.image,
+            image: normalizeImageUrl(recipe.image),
             popularity: recipe.aggregateLikes,
             vegan: recipe.vegan,
             vegetarian: recipe.vegetarian,
@@ -78,7 +86,9 @@ async function getRecipeDetails(recipeId) {
             extendedIngredients: recipe.extendedIngredients.map(ing => ({
                 id: ing.id,
                 name: ing.name,
-                original: ing.original
+                original: ing.original,
+                amount: ing.amount,
+                unit: ing.unit
             })),
             analyzedInstructions: recipe.analyzedInstructions,
             source: "spoonacular"
@@ -111,6 +121,8 @@ async function getAllRecipes() {
 
 // TODO: DONE
 async function searchRecipes({ query, cuisine, diet, intolerance, sort, limit }) {
+    const validSorts = ["popularity", "time"];
+    const safeSort = validSorts.includes(sort) ? sort : undefined;
     try {
         const response = await axios.get(`${api_domain}/complexSearch`, {
             params: {
@@ -118,7 +130,7 @@ async function searchRecipes({ query, cuisine, diet, intolerance, sort, limit })
                 cuisine,
                 diet,
                 intolerances: intolerance,
-                sort,
+                sort: safeSort,
                 number: limit,
                 addRecipeInformation: true,
                 fillIngredients: true,
@@ -145,14 +157,24 @@ async function searchRecipes({ query, cuisine, diet, intolerance, sort, limit })
 }
 
 async function getRandomRecipes() {
-    let recipes = await axios.get(`${api_domain}/random`, {
+    let response = await axios.get(`${api_domain}/random`, {
         params: {
             includeNutrition: false,
             apiKey: api_key,
             number: 3
         }
     });
-    return formatAsList(recipes.data.recipes)
+
+    return response.data.recipes.map(r => ({
+        id: r.id,
+        name: r.title,
+        time: r.readyInMinutes,
+        mainImage: r.image,
+        popularity: r.aggregateLikes,
+        vegan: r.vegan,
+        vegetarian: r.vegetarian,
+        glutenFree: r.glutenFree
+    }));
 }
 
 const DButils = require("./DButils");
@@ -218,22 +240,44 @@ async function createRecipe(userId, recipeData) {
 }
 
 
-
 async function getRecipesPreview(recipesIdArray) {
     if (!recipesIdArray || recipesIdArray.length === 0) return [];
 
-    const safeIds = recipesIdArray.map(id => parseInt(id)).filter(Number.isInteger);
-    if (safeIds.length === 0) return [];
+    const previews = await Promise.all(
+        recipesIdArray.map(async (id) => {
+            try {
+                const recipe = await getRecipeDetails(id);
+                if (!recipe) return null;
 
-    const query = `
-        SELECT recipeId AS id, title, imageUrl, preparationTime
-        FROM recipes
-        WHERE recipeId IN (${safeIds.join(',')})
-    `;
+                return {
+                    id: recipe.id,
+                    title: recipe.title,
+                    image: normalizeImageUrl(recipe.image),
+                    readyInMinutes: recipe.readyInMinutes,
+                    aggregateLikes: recipe.aggregateLikes || recipe.popularity || 0,
+                    cuisine: recipe.cuisine || "Unknown"
+                };
 
-    return await DButils.execQuery(query);
+
+            } catch (err) {
+                console.warn("⚠️ Failed to load preview for recipe ID:", id, "|", err.message);
+                return null;
+            }
+        })
+    );
+
+    return previews.filter(p => p !== null);
 }
 
+
+async function incrementRecipeLikes(recipeId) {
+    const query = `
+    UPDATE recipes
+    SET aggregateLikes = aggregateLikes + 1
+    WHERE recipeId = ${recipeId}
+  `;
+    await DButils.execQuery(query);
+}
 
 module.exports = {
     createRecipe,
@@ -241,5 +285,6 @@ module.exports = {
     getRandomRecipes,
     getAllRecipes,
     searchRecipes,
-    getRecipesPreview
+    getRecipesPreview,
+    incrementRecipeLikes
 };

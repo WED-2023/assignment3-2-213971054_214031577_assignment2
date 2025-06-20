@@ -58,22 +58,22 @@ router.get('/favorites', async (req, res, next) => {
 });
 
 // // TODO: DONE
-// //router.post('/addRecipe', async (req, res, next) => {
-//   //try {
-//     //const user_id = req.session.user_id;
-//     const title = req.body.title;
-//     const preparationTime = req.body.preparationTime;
-//     const cuisine = req.body.cuisine;
-//     const imageUrl = req.body.imageUrl;
-//     const ingredients = req.body.ingredients;
-//     const instructions = req.body.instructions;
-//     const servings = req.body.servings;
-//     await user_utils.addRecipe(user_id, title, preparationTime, cuisine, imageUrl, ingredients, instructions, servings);
-//     res.status(200).send("The Recipe successfully added");
-//   } catch (error) {
-//     next(error);
-//   }
-// });
+router.post('/addRecipe', async (req, res, next) => {
+   try {
+     const user_id = req.session.user_id;
+     const title = req.body.title;
+     const preparationTime = req.body.preparationTime;
+     const cuisine = req.body.cuisine;
+     const imageUrl = req.body.imageUrl;
+     const ingredients = req.body.ingredients;
+     const instructions = req.body.instructions;
+     const servings = req.body.servings;
+     await user_utils.addRecipe(user_id, title, preparationTime, cuisine, imageUrl, ingredients, instructions, servings);
+     res.status(200).send("The Recipe successfully added");
+   } catch (error) {
+     next(error);
+    }
+ });
 
 // TODO: DONE
 router.get('/myRecipes', async (req, res, next) => {
@@ -109,7 +109,11 @@ router.post('/addWatched', async (req, res, next) => {
 router.get('/lastWatched', async (req, res, next) => {
   try {
     const user_id = req.session.user_id;
-    const limit = req.query.limit;
+
+    let limit = parseInt(req.query.limit);
+    if (isNaN(limit) || limit <= 0) {
+      limit = 3;
+    }
 
     const recipes_id = await user_utils.getWatchedRecipes(user_id, limit);
     const recipes_id_array = recipes_id.map((element) => element.recipe_id);
@@ -154,5 +158,49 @@ router.get("/myFamilyRecipes", async (req, res, next) => {
   }
 });
 
+router.get('/watchedIds', async (req, res, next) => {
+  try {
+    const user_id = req.session.user_id;
+    const watchedIds = await user_utils.getAllWatchedRecipeIds(user_id);
+    res.status(200).send(watchedIds);
+  } catch (error) {
+    next(error);
+  }
+});
+
+
+
+// === Meal Plan ===
+router.get('/meal-plan', async (req, res, next) => {
+  try {
+    const recipeIds = await user_utils.getMealPlan(req.user_id);
+    const recipes = await Promise.all(
+        recipeIds.map(id => recipe_utils.getRecipeDetails(id))
+    );
+    res.send(recipes);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/meal-plan', async (req, res, next) => {
+  try {
+    const { recipeId } = req.body;
+    await user_utils.addToMealPlan(req.user_id, recipeId);
+    res.status(200).send('Added to meal plan');
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete('/meal-plan/:id', async (req, res, next) => {
+  try {
+    const recipeId = req.params.id;
+    await user_utils.removeFromMealPlan(req.user_id, recipeId);
+    res.status(200).send('Removed from meal plan');
+  } catch (err) {
+    next(err);
+  }
+});
 
 module.exports = router;

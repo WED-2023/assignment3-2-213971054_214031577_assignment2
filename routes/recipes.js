@@ -22,9 +22,18 @@ router.get("/random", async (req, res, next) => {
   }
 });
 
+// Middleware: Require authentication
+function requireLogin(req, res, next) {
+  if (!req.session || !req.session.user_id) {
+    return res.status(401).send("Unauthorized: Please log in to search");
+  }
+  next();
+}
+
+
 // SEARCH
 // TODO: DONE
-router.get("/search", async (req, res, next) => {
+router.get("/search", requireLogin, async (req, res, next) => {
   try {
     const {
       query,
@@ -49,7 +58,6 @@ router.post("/", async (req, res, next) => {
     if (!req.session || !req.session.user_id) {
       return res.status(401).send("User not authenticated");
     }
-
     const userId = req.session.user_id;
     const recipeData = req.body;
     const recipeId = await recipes_utils.createRecipe(userId, recipeData);
@@ -67,6 +75,18 @@ router.get("/:recipeId", async (req, res, next) => {
     res.send(recipe);
   } catch (error) {
     next(error);
+  }
+});
+
+// LIKE a recipe (increment likes)
+router.post("/:recipeId/like", async (req, res, next) => {
+  try {
+    const recipeId = parseInt(req.params.recipeId);
+    await recipes_utils.incrementRecipeLikes(recipeId);
+    res.status(200).send({ message: "Recipe liked successfully" });
+  } catch (error) {
+    console.error("Error liking recipe:", error);
+    res.status(500).send("Failed to like recipe");
   }
 });
 
