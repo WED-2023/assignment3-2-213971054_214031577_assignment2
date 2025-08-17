@@ -6,7 +6,7 @@ const config = {
   connectionLimit: 4,
   host: "localhost",//"localhost"
   user: "root",//"root"
-  password: "",
+  password: "root",
   database: "myapp"
   // database:"mydb"
 }
