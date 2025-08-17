@@ -6,7 +6,7 @@ info:
 servers:
   - url: "http://127.0.0.1:80"
     # remote:
-    # - url: "http://132.72.65.211"
+    # - url: "https://hs-da.cs.bgu.ac.il"
     description: SwaggerHub API Auto Mocking hey
 security:
   - BearerAuth: []
@@ -15,8 +15,8 @@ paths:
     get:
       tags:
         - Recipes
-      summary: Get list of all public recipes
-      description: Returns a list of all public recipes available in the system.
+      summary: Get 5 random recipes (preview)
+      description: Fetches 5 random recipes from Spoonacular API in preview format
       responses:
         "200":
           description: A list of recipes
@@ -110,6 +110,15 @@ paths:
                   type: boolean
                 glutenFree:
                   type: boolean
+                ingredients:
+                  type: array
+                  items:
+                    type: string
+                instructions:
+                  type: array
+                  items:
+                    type: string
+
                 extendedIngredients:
                   type: array
                   items:
@@ -282,8 +291,9 @@ paths:
           schema:
             type: string
             enum:
-              - preparationTime
-              - likes
+              - popularity
+              - time
+
         - name: limit
           in: query
           description: Number of results to return
@@ -295,6 +305,8 @@ paths:
               - 5
               - 10
               - 15
+      security:
+        - cookieAuth: []
       responses:
         "200":
           description: List of matching recipes
@@ -311,16 +323,44 @@ paths:
   /recipes/random:
     get:
       tags:
-      - Recipes
-      description: Returns 3 random recipes
-      operationId: getRandomRecipes
+        - Recipes
+      summary: Get 3 random recipes
+      description: Fetches 3 random recipes from Spoonacular API in preview format.
       responses:
         "200":
-          description: OK
+          description: A list of 3 random recipes
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/getRecipes'
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 12345
+                    name:
+                      type: string
+                      example: "Pasta Primavera"
+                    time:
+                      type: integer
+                      example: 30
+                    mainImage:
+                      type: string
+                      example: "https://spoonacular.com/recipe.jpg"
+                    popularity:
+                      type: integer
+                      example: 250
+                    vegan:
+                      type: boolean
+                      example: false
+                    vegetarian:
+                      type: boolean
+                      example: true
+                    glutenFree:
+                      type: boolean
+                      example: true
+
   /auth/register:
     post:
       tags:
@@ -537,11 +577,124 @@ paths:
                     example: Not authenticated
       security:
         - cookieAuth: [ ]
+        
+  /users/addRecipe:
+    post:
+      tags:
+        - Users
+      summary: Add a new recipe created by the user
+      description: Saves a new recipe authored by the logged-in user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRecipeInput'
+      responses:
+        "200":
+          description: Recipe successfully added
+        "401":
+          description: Not authenticated
+          
+  /users/meal-plan:
+    get:
+      tags:
+        - Users
+      summary: Get the user's meal plan
+      description: Returns all recipes currently in the user's meal plan.
+      responses:
+        "200":
+          description: A list of recipes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getRecipes'
+        "401":
+          description: Not authenticated
+    post:
+      tags:
+        - Users
+      summary: Add a recipe to the user's meal plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recipeId:
+                  type: integer
+              required:
+                - recipeId
+      responses:
+        "200":
+          description: Added to meal plan
+        "401":
+          description: Not authenticated
 
+  /users/meal-plan/{id}:
+    delete:
+      tags:
+        - Users
+      summary: Remove a recipe from the user's meal plan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Removed from meal plan
+        "401":
+          description: Not authenticated
 
 
 components:
   schemas:
+  
+    MealPlanItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique ID of the meal plan entry
+        recipeId:
+          type: integer
+          description: Recipe associated with this meal plan entry
+        dateAdded:
+          type: string
+          format: date-time
+          description: When the recipe was added to the meal plan
+    MealPlan:
+      type: array
+      items:
+        $ref: '#/components/schemas/MealPlanItem'
+
+    UserRecipeInput:
+      type: object
+      properties:
+        title:
+          type: string
+        preparationTime:
+          type: integer
+          description: Preparation time in minutes
+          example: 45
+        cuisine:
+          type: string
+        imageUrl:
+          type: string
+        ingredients:
+          type: string
+        instructions:
+          type: string
+        servings:
+          type: integer
+      required:
+        - title
+        - preparationTime
+        - ingredients
+        - instructions
     FamilyRecipe:
       type: object
       properties:
