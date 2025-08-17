@@ -6,7 +6,7 @@ info:
 servers:
   - url: "http://127.0.0.1:80"
     # remote:
-    # - url: "https://hs-da.cs.bgu.ac.il"
+    # - url: "http://132.72.65.211"
     description: SwaggerHub API Auto Mocking hey
 security:
   - BearerAuth: []
@@ -78,26 +78,28 @@ paths:
               required:
                 - title
                 - imageUrl
-                - preparationTime
-                - cuisine
+                - instruction
+                - ingredients
                 - servings
                 - readyInMinutes
-                - aggregateLikes
                 - vegan
                 - vegetarian
                 - glutenFree
-                - extendedIngredients
-                - analyzedInstructions
+
               properties:
                 title:
                   type: string
                 imageUrl:
                   type: string
                   format: uri
-                preparationTime:
-                  type: integer
-                cuisine:
-                  type: string
+                instructions:
+                  type: array
+                  items:
+                    type: string
+                ingredients:
+                  type: array
+                  items:
+                    type: string
                 servings:
                   type: integer
                 readyInMinutes:
@@ -110,42 +112,7 @@ paths:
                   type: boolean
                 glutenFree:
                   type: boolean
-                ingredients:
-                  type: array
-                  items:
-                    type: string
-                instructions:
-                  type: array
-                  items:
-                    type: string
-
-                extendedIngredients:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                      name:
-                        type: string
-                      original:
-                        type: string
-                analyzedInstructions:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      name:
-                        type: string
-                      steps:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            number:
-                              type: integer
-                            step:
-                              type: string
+              
       responses:
         "201":
           description: Recipe created successfully
@@ -652,7 +619,6 @@ paths:
 
 components:
   schemas:
-  
     MealPlanItem:
       type: object
       properties:
@@ -676,25 +642,25 @@ components:
       properties:
         title:
           type: string
-        preparationTime:
-          type: integer
-          description: Preparation time in minutes
-          example: 45
-        cuisine:
-          type: string
         imageUrl:
-          type: string
-        ingredients:
           type: string
         instructions:
           type: string
+        ingredients:
+          type: string
         servings:
           type: integer
+        ready in minutes:
+          type: integer
+          description: Preparation time in minutes
+          example: 45
       required:
         - title
         - preparationTime
         - ingredients
         - instructions
+        - servings
+        - ready in minutes
     FamilyRecipe:
       type: object
       properties:
